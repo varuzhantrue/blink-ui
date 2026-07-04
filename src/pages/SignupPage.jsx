@@ -1,9 +1,11 @@
 import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { Button } from '../components/ui/button'
 import { Input } from '../components/ui/input'
 
 export default function SignupPage() {
+  const navigate = useNavigate()
   const { signup } = useAuth()
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
@@ -16,7 +18,7 @@ export default function SignupPage() {
     setLoading(true)
     try {
       await signup(username, password)
-      window.location.href = '/dashboard'
+      navigate('/dashboard')
     } catch (err) {
       if (err.response?.status === 409) {
         setError('Username is already taken.')

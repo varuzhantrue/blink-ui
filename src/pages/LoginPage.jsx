@@ -1,9 +1,11 @@
 import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { Button } from '../components/ui/button'
 import { Input } from '../components/ui/input'
 
 export default function LoginPage() {
+  const navigate = useNavigate()
   const { login } = useAuth()
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
@@ -16,7 +18,7 @@ export default function LoginPage() {
     setLoading(true)
     try {
       await login(username, password)
-      window.location.href = '/dashboard'
+      navigate('/dashboard')
     } catch (err) {
       if (err.response?.status === 401) {
         setError('Invalid username or password.')
