@@ -3,6 +3,7 @@ import { toast } from 'sonner'
 import Navbar from '../components/Navbar'
 import { useFiles } from '../hooks/useFiles'
 import { uploadFile } from '../api/files'
+import { uploadFileMultipart } from '../api/multipartUpload'
 import {
   Table,
   TableBody,
@@ -12,6 +13,7 @@ import {
   TableRow,
 } from '../components/ui/table'
 import { Button } from '../components/ui/button'
+import { Progress } from '../components/ui/progress'
 
 function formatBytes(bytes) {
   if (bytes === 0) return '0 B'
@@ -39,23 +41,33 @@ function SkeletonRow() {
   )
 }
 
+const MULTIPART_THRESHOLD = 10 * 1024 * 1024 // 10 MB
+
 export default function DashboardPage() {
   const { files, loading, error, refresh } = useFiles()
   const fileInputRef = useRef(null)
   const [uploading, setUploading] = useState(false)
+  const [progress, setProgress] = useState(null) // null = hidden, 0-100 = visible
 
   async function handleFileChange(e) {
     const file = e.target.files[0]
     if (!file) return
     setUploading(true)
+    setProgress(null)
     try {
-      await uploadFile(file)
+      if (file.size > MULTIPART_THRESHOLD) {
+        setProgress(0)
+        await uploadFileMultipart(file, setProgress)
+      } else {
+        await uploadFile(file)
+      }
       toast.success(`"${file.name}" uploaded successfully.`)
       refresh()
     } catch {
       toast.error('Upload failed. Please try again.')
     } finally {
       setUploading(false)
+      setProgress(null)
       e.target.value = ''
     }
   }
@@ -71,6 +83,13 @@ export default function DashboardPage() {
           </Button>
           <input ref={fileInputRef} type="file" hidden onChange={handleFileChange} />
         </div>
+
+        {progress !== null && (
+          <div className="space-y-1">
+            <Progress value={progress} />
+            <p className="text-xs text-muted-foreground">{progress}% uploaded</p>
+          </div>
+        )}
 
         {error && <p className="text-sm text-destructive">{error}</p>}
 
