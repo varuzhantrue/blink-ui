@@ -1,5 +1,8 @@
+import { useRef, useState } from 'react'
+import { toast } from 'sonner'
 import Navbar from '../components/Navbar'
 import { useFiles } from '../hooks/useFiles'
+import { uploadFile } from '../api/files'
 import {
   Table,
   TableBody,
@@ -37,13 +40,37 @@ function SkeletonRow() {
 }
 
 export default function DashboardPage() {
-  const { files, loading, error } = useFiles()
+  const { files, loading, error, refresh } = useFiles()
+  const fileInputRef = useRef(null)
+  const [uploading, setUploading] = useState(false)
+
+  async function handleFileChange(e) {
+    const file = e.target.files[0]
+    if (!file) return
+    setUploading(true)
+    try {
+      await uploadFile(file)
+      toast.success(`"${file.name}" uploaded successfully.`)
+      refresh()
+    } catch {
+      toast.error('Upload failed. Please try again.')
+    } finally {
+      setUploading(false)
+      e.target.value = ''
+    }
+  }
 
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
       <main className="mx-auto max-w-5xl px-4 py-8 space-y-4">
-        <h2 className="text-xl font-semibold">Your Files</h2>
+        <div className="flex items-center justify-between">
+          <h2 className="text-xl font-semibold">Your Files</h2>
+          <Button onClick={() => fileInputRef.current.click()} disabled={uploading}>
+            {uploading ? 'Uploading…' : 'Upload File'}
+          </Button>
+          <input ref={fileInputRef} type="file" hidden onChange={handleFileChange} />
+        </div>
 
         {error && <p className="text-sm text-destructive">{error}</p>}
 
