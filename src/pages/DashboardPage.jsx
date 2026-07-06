@@ -2,7 +2,7 @@ import { useRef, useState } from 'react'
 import { toast } from 'sonner'
 import Navbar from '../components/Navbar'
 import { useFiles } from '../hooks/useFiles'
-import { uploadFile } from '../api/files'
+import { uploadFile, downloadFile } from '../api/files'
 import { uploadFileMultipart } from '../api/multipartUpload'
 import {
   Table,
@@ -48,6 +48,20 @@ export default function DashboardPage() {
   const fileInputRef = useRef(null)
   const [uploading, setUploading] = useState(false)
   const [progress, setProgress] = useState(null) // null = hidden, 0-100 = visible
+
+  async function handleDownload(file) {
+    try {
+      const response = await downloadFile(file.id)
+      const url = URL.createObjectURL(response.data)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = file.originalFileName
+      a.click()
+      URL.revokeObjectURL(url)
+    } catch {
+      toast.error('Download failed. Please try again.')
+    }
+  }
 
   async function handleFileChange(e) {
     const file = e.target.files[0]
@@ -126,7 +140,7 @@ export default function DashboardPage() {
                   <TableCell>{formatBytes(file.fileSize)}</TableCell>
                   <TableCell>{formatDate(file.uploadTimestamp)}</TableCell>
                   <TableCell className="text-right space-x-2">
-                    <Button variant="outline" size="sm">Download</Button>
+                    <Button variant="outline" size="sm" onClick={() => handleDownload(file)}>Download</Button>
                     <Button variant="outline" size="sm">Share</Button>
                     <Button variant="destructive" size="sm">Delete</Button>
                   </TableCell>

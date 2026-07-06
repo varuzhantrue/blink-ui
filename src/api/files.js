@@ -14,7 +14,7 @@ export function uploadFile(file) {
 }
 
 export function downloadFile(id) {
-  return client.get(`/api/files/${id}/download`)
+  return client.get(`/api/files/${id}/download`, { responseType: 'blob' })
 }
 
 export function deleteFile(id) {
