@@ -2,7 +2,7 @@ import { useRef, useState } from 'react'
 import { toast } from 'sonner'
 import Navbar from '../components/Navbar'
 import { useFiles } from '../hooks/useFiles'
-import { uploadFile, downloadFile } from '../api/files'
+import { uploadFile, downloadFile, deleteFile } from '../api/files'
 import { uploadFileMultipart } from '../api/multipartUpload'
 import {
   Table,
@@ -14,6 +14,15 @@ import {
 } from '../components/ui/table'
 import { Button } from '../components/ui/button'
 import { Progress } from '../components/ui/progress'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+  DialogClose,
+} from '../components/ui/dialog'
 
 function formatBytes(bytes) {
   if (bytes === 0) return '0 B'
@@ -48,6 +57,23 @@ export default function DashboardPage() {
   const fileInputRef = useRef(null)
   const [uploading, setUploading] = useState(false)
   const [progress, setProgress] = useState(null) // null = hidden, 0-100 = visible
+  const [fileToDelete, setFileToDelete] = useState(null) // file object or null
+  const [deleting, setDeleting] = useState(false)
+
+  async function handleDeleteConfirm() {
+    if (!fileToDelete) return
+    setDeleting(true)
+    try {
+      await deleteFile(fileToDelete.id)
+      toast.success(`"${fileToDelete.originalFileName}" deleted.`)
+      setFileToDelete(null)
+      refresh()
+    } catch {
+      toast.error('Delete failed. Please try again.')
+    } finally {
+      setDeleting(false)
+    }
+  }
 
   async function handleDownload(file) {
     try {
@@ -142,7 +168,7 @@ export default function DashboardPage() {
                   <TableCell className="text-right space-x-2">
                     <Button variant="outline" size="sm" onClick={() => handleDownload(file)}>Download</Button>
                     <Button variant="outline" size="sm">Share</Button>
-                    <Button variant="destructive" size="sm">Delete</Button>
+                    <Button variant="destructive" size="sm" onClick={() => setFileToDelete(file)}>Delete</Button>
                   </TableCell>
                 </TableRow>
               ))}
@@ -150,6 +176,25 @@ export default function DashboardPage() {
           </Table>
         </div>
       </main>
+
+      <Dialog open={!!fileToDelete} onOpenChange={(open) => { if (!open) setFileToDelete(null) }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Delete file</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete &quot;{fileToDelete?.originalFileName}&quot;? This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <DialogClose asChild>
+              <Button variant="outline" disabled={deleting}>Cancel</Button>
+            </DialogClose>
+            <Button variant="destructive" onClick={handleDeleteConfirm} disabled={deleting}>
+              {deleting ? 'Deleting…' : 'Delete'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
