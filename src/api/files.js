@@ -22,7 +22,7 @@ export function deleteFile(id) {
 }
 
 export function shareFile(id) {
-  return client.post(`/api/files/${id}/share`)
+  return client.get(`/api/files/${id}/share`)
 }
 
 export function initiateMultipartUpload(fileName, fileSize, contentType, partCount) {

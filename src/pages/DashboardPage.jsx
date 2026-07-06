@@ -2,7 +2,7 @@ import { useRef, useState } from 'react'
 import { toast } from 'sonner'
 import Navbar from '../components/Navbar'
 import { useFiles } from '../hooks/useFiles'
-import { uploadFile, downloadFile, deleteFile } from '../api/files'
+import { uploadFile, downloadFile, deleteFile, shareFile } from '../api/files'
 import { uploadFileMultipart } from '../api/multipartUpload'
 import {
   Table,
@@ -72,6 +72,16 @@ export default function DashboardPage() {
       toast.error('Delete failed. Please try again.')
     } finally {
       setDeleting(false)
+    }
+  }
+
+  async function handleShare(id) {
+    try {
+      const response = await shareFile(id)
+      await navigator.clipboard.writeText(response.data.url)
+      toast.success('Link copied to clipboard — expires in 1 hour.')
+    } catch {
+      toast.error('Failed to generate share link. Please try again.')
     }
   }
 
@@ -167,7 +177,7 @@ export default function DashboardPage() {
                   <TableCell>{formatDate(file.uploadTimestamp)}</TableCell>
                   <TableCell className="text-right space-x-2">
                     <Button variant="outline" size="sm" onClick={() => handleDownload(file)}>Download</Button>
-                    <Button variant="outline" size="sm">Share</Button>
+                    <Button variant="outline" size="sm" onClick={() => handleShare(file.id)}>Share</Button>
                     <Button variant="destructive" size="sm" onClick={() => setFileToDelete(file)}>Delete</Button>
                   </TableCell>
                 </TableRow>
