@@ -59,6 +59,8 @@ export default function DashboardPage() {
   const [progress, setProgress] = useState(null) // null = hidden, 0-100 = visible
   const [fileToDelete, setFileToDelete] = useState(null) // file object or null
   const [deleting, setDeleting] = useState(false)
+  const [downloadingId, setDownloadingId] = useState(null)
+  const [sharingId, setSharingId] = useState(null)
 
   async function handleDeleteConfirm() {
     if (!fileToDelete) return
@@ -68,24 +70,28 @@ export default function DashboardPage() {
       toast.success(`"${fileToDelete.originalFileName}" deleted.`)
       setFileToDelete(null)
       refresh()
-    } catch {
-      toast.error('Delete failed. Please try again.')
+    } catch (err) {
+      toast.error(err.uiMessage ?? 'Delete failed. Please try again.')
     } finally {
       setDeleting(false)
     }
   }
 
   async function handleShare(id) {
+    setSharingId(id)
     try {
       const response = await shareFile(id)
       await navigator.clipboard.writeText(response.data.url)
       toast.success('Link copied to clipboard — expires in 1 hour.')
-    } catch {
-      toast.error('Failed to generate share link. Please try again.')
+    } catch (err) {
+      toast.error(err.uiMessage ?? 'Failed to generate share link. Please try again.')
+    } finally {
+      setSharingId(null)
     }
   }
 
   async function handleDownload(file) {
+    setDownloadingId(file.id)
     try {
       const response = await downloadFile(file.id)
       const url = URL.createObjectURL(response.data)
@@ -94,8 +100,10 @@ export default function DashboardPage() {
       a.download = file.originalFileName
       a.click()
       URL.revokeObjectURL(url)
-    } catch {
-      toast.error('Download failed. Please try again.')
+    } catch (err) {
+      toast.error(err.uiMessage ?? 'Download failed. Please try again.')
+    } finally {
+      setDownloadingId(null)
     }
   }
 
@@ -113,8 +121,8 @@ export default function DashboardPage() {
       }
       toast.success(`"${file.name}" uploaded successfully.`)
       refresh()
-    } catch {
-      toast.error('Upload failed. Please try again.')
+    } catch (err) {
+      toast.error(err.uiMessage ?? 'Upload failed. Please try again.')
     } finally {
       setUploading(false)
       setProgress(null)
@@ -176,9 +184,29 @@ export default function DashboardPage() {
                   <TableCell>{formatBytes(file.fileSize)}</TableCell>
                   <TableCell>{formatDate(file.uploadTimestamp)}</TableCell>
                   <TableCell className="text-right space-x-2">
-                    <Button variant="outline" size="sm" onClick={() => handleDownload(file)}>Download</Button>
-                    <Button variant="outline" size="sm" onClick={() => handleShare(file.id)}>Share</Button>
-                    <Button variant="destructive" size="sm" onClick={() => setFileToDelete(file)}>Delete</Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      disabled={downloadingId === file.id}
+                      onClick={() => handleDownload(file)}
+                    >
+                      {downloadingId === file.id ? 'Downloading…' : 'Download'}
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      disabled={sharingId === file.id}
+                      onClick={() => handleShare(file.id)}
+                    >
+                      {sharingId === file.id ? 'Copying…' : 'Share'}
+                    </Button>
+                    <Button
+                      variant="destructive"
+                      size="sm"
+                      onClick={() => setFileToDelete(file)}
+                    >
+                      Delete
+                    </Button>
                   </TableCell>
                 </TableRow>
               ))}
